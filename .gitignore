@@ -1,0 +1,22 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+github-trending-collect
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+target
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+.env
+
+
+git config user.name=朱志鹏
+git config user.email=zpzhue@gmail.com
