@@ -16,6 +16,7 @@ target
 # Dependency directories (remove the comment below to include it)
 # vendor/
 .env
+.idea
 
 
 git config user.name=朱志鹏
