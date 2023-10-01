@@ -36,9 +36,7 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        run:
-          ls
-          pwd
+        run: ls && pwd
 
       - name: collect_repository
         run: ./github-trending-collect -task trending -since daily
