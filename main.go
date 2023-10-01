@@ -20,9 +20,9 @@ import (
 )
 
 const TrendingUrl = "https://github.com/trending"
-const RedisCachePrefix = "treading"
+const RedisCachePrefix = "trending"
 
-var languageList = []string{"all", "c", "c++", "go", "java", "python", "rust", "vue", "typescript", "rust"}
+var languageList = []string{"all", "c", "c++", "go", "java", "jupyter-notebook", "python", "javascript", "typescript", "rust", "vue"}
 
 /*
 *
@@ -153,7 +153,7 @@ func getRepositryInfo(client *http.Client, repo string) (repostry Repostry, err 
 	return repostry, nil
 }
 
-func saveTreadingList(client *http.Client, db *gorm.DB, sinceType string) {
+func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 	ctx := context.Background()
 	rc := getRedisClient()
 	var repoMaps = make(map[string][][2]string)
@@ -169,7 +169,7 @@ func saveTreadingList(client *http.Client, db *gorm.DB, sinceType string) {
 		log.WithFields(log.Fields{"repo_list_length": l})
 		syscall.Exit(1)
 	}
-	var treadingList []Trending
+	var trendingList []Trending
 	date := getDate(sinceType)
 
 	for language, repoList := range repoMaps {
@@ -209,7 +209,7 @@ func saveTreadingList(client *http.Client, db *gorm.DB, sinceType string) {
 			}
 			// 添加到redis缓存
 			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
-			treadingList = append(treadingList, Trending{
+			trendingList = append(trendingList, Trending{
 				Date:     date,
 				FullName: repo[0],
 				Stars:    star,
@@ -221,8 +221,8 @@ func saveTreadingList(client *http.Client, db *gorm.DB, sinceType string) {
 	}
 
 	// 添加到数据库
-	db.Save(&treadingList)
-	log.Info("save all treading repositry successful!")
+	db.Save(&trendingList)
+	log.Info("save all trending repositry successful!")
 }
 
 func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
@@ -258,8 +258,8 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 }
 
 func main() {
-	taskName := flag.String("task", "treading", "run collect github treading repositry name task or save repository info task(treading/repo)")
-	sinceTypeName := flag.String("since", "daily", "run collect github treading with since params, choice are daily, weekly, monthly")
+	taskName := flag.String("task", "trending", "run collect github trending repositry name task or save repository info task(trending/repo)")
+	sinceTypeName := flag.String("since", "daily", "run collect github trending with since params, choice are daily, weekly, monthly")
 
 	flag.Parse()
 	task, sinceType := *taskName, *sinceTypeName
@@ -286,9 +286,9 @@ func main() {
 		tr.Proxy = http.ProxyURL(proxyUrl)
 	}
 	client := &http.Client{Transport: tr}
-	if task == "treading" {
-		log.WithFields(log.Fields{"sinceType": sinceType}).Info("will run saveTreadingList task .")
-		saveTreadingList(client, db, sinceType)
+	if task == "trending" {
+		log.WithFields(log.Fields{"sinceType": sinceType}).Info("will run saveTrendingList task .")
+		saveTrendingList(client, db, sinceType)
 	} else if task == "repo" {
 		log.WithFields(log.Fields{"sinceType": sinceType}).Info("will run saveRepositry2DB task .")
 		saveRepositry2DB(client, db, sinceType)
