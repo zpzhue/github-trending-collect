@@ -4,6 +4,8 @@ name: release_package
 
 on:
   push:
+    branches:
+      - release
     tags:
       - '*'
 
