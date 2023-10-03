@@ -1,0 +1,21 @@
+name: daily_save_task
+
+on:
+  schedule:
+    - cron: '30 17 * * *' # 每天下午5点半
+
+
+jobs:
+  save_to_db:
+    name: save github trending info from cache in daily
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: download github collect binary
+        run: wget https://github.com/zpzhue/github-trending-collect/releases/download/v0.1/github-trending-collect_0.1_linux_amd64.tar.gz -O github-trending-collect.tar.gz && ls -lh
+
+      - name: unpack tar package file
+        run: /usr/bin/tar xf github-trending-collect.tar.gz && ls -lh
+
+      - name: run save script
+        run: ./github-trending-collect -task repo -since daily
