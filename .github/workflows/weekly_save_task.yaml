@@ -8,6 +8,19 @@ jobs:
   save_to_db:
     name: save github trending(weekly) info from cache in weekend
     runs-on: ubuntu-latest
+    env: # 设置环境变量
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_SSL_MODE: ${{ secrets.DB_SSL_MODE }}
+      DB_TZ: ${{ secrets.DB_TZ }}
+      API_URL: ${{ secrets.API_URL }}
+      API_AUTH_KEY: ${{ secrets.API_AUTH_KEY }}
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      REDIS_USER: ${{ secrets.REDIS_USER }}
+      REDIS_PASSWD: ${{ secrets.REDIS_PASSWD }}
 
     steps:
       - name: download github collect binary
