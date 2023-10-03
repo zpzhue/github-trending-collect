@@ -2,7 +2,7 @@ name: weekly_save_task
 
 on:
   schedule:
-    - cron: '40 17 * * 0' # 每周日下午5点半
+    - cron: '40 9 * * 0' # 每周日下午5点半
 
 jobs:
   save_to_db:

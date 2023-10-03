@@ -2,7 +2,7 @@ name: daily_save_task
 
 on:
   schedule:
-    - cron: '30 17 * * *' # 每天下午5点半
+    - cron: '30 9 * * *' # 每天下午5点半
 
 
 jobs:

@@ -2,7 +2,7 @@ name: daily_collect_task
 
 on:
   schedule:
-    - cron: '0 0/3 * * *' # 每三个小时的整点
+    - cron: '0 0/1 * * *' # 每三个小时的整点
 
 
 jobs:
