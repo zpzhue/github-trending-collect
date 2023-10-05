@@ -5,10 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
-	"github.com/antchfx/htmlquery"
-	"github.com/redis/go-redis/v9"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +13,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/antchfx/htmlquery"
+	"github.com/redis/go-redis/v9"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const TrendingUrl = "https://github.com/trending"
@@ -59,7 +60,10 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 
 	log.Debug("开始请求" + reqUrl)
 	request, err := http.NewRequest("GET", TrendingUrl, nil)
-	request.URL.Query().Add("sinceType", sinceType)
+	query := request.URL.Query()
+	query.Add("sinceType", sinceType)
+	request.URL.RawQuery = query.Encode()
+
 	if err != nil {
 		panic(err)
 	}
@@ -238,9 +242,8 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cahce error: ")
 		}
 
-		repositoryList := make([]Repostry, len(ret))
+		var repositoryList []Repostry
 		for key := range ret {
-			// println("key=" + key + ", " + "value=" + value)
 			r, err := getRepositryInfo(client, key)
 			if err != nil {
 				log.WithFields(log.Fields{"name": key, "error": err.Error()}).Error("获取repository详细信息失败")
@@ -252,7 +255,6 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 		log.WithFields(log.Fields{
 			"repositrySize": len(repositoryList),
 		}).Info("save repositry list to database successful")
-
 	}
 
 }
