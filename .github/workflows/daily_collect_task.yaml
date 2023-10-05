@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: download github collect binary
-        run: wget https://github.com/zpzhue/github-trending-collect/releases/download/v0.1/github-trending-collect_0.1_linux_amd64.tar.gz -O github-trending-collect.tar.gz && ls -lh
+        run: wget ${{ secrets.RELEASE_URL }} -O github-trending-collect.tar.gz && ls -lh
 
       - name: unpack tar package file
         run: /usr/bin/tar xf github-trending-collect.tar.gz && ls -lh
