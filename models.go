@@ -10,19 +10,19 @@ import (
 type Trending struct {
 	ID          int32     `json:"id" gorm:"primaryKey;type:bigserial"`
 	Date        string    `json:"date" gorm:"type:date"`
-	FullName    string    `json:"full_name" gorm:"type:varchar(256)"`
+	Repostry    string    `json:"repostry" gorm:"type:varchar(256),foreignKey:full_name"`
 	Stars       int       `json:"stars" gorm:"type:integer"`
 	Since       string    `json:"since" gorm:"type:varchar(16)"`
 	Language    string    `json:"language" gorm:"type:varchar(32)"`
 	UpdatedTime time.Time `json:"update_time" gorm:"default:current_timestamp"`
-	DeletedTime time.Time `json:"delete_time" gorm:"default:current_timestamp"`
+	DeletedTime time.Time `json:"delete_time"`
 }
 
 type Repostry struct {
 	ID               int           `json:"id" gorm:"primaryKey;type:bigint"`
 	NodeID           string        `json:"node_id" gorm:"type:varchar(64)"`
 	Name             string        `json:"name" gorm:"type:varchar(64)"`
-	FullName         string        `json:"full_name" gorm:"type:varchar(256)"`
+	FullName         string        `json:"full_name" gorm:"type:varchar(256),not null,uniqueIndex"`
 	Private          bool          `json:"private"`
 	Owner            *Owner        `json:"owner" gorm:"foreignKey:id"`
 	HtmlURL          string        `json:"html_url"  gorm:"type:varchar(512)"`
@@ -57,7 +57,7 @@ type Repostry struct {
 	Organization     *Organization `json:"organization" gorm:"foreignKey:id"`
 	SubscribersCount int           `json:"subscribers_count"`
 	UpdatedTime      time.Time     `json:"update_time" gorm:"default:current_timestamp"`
-	DeletedTime      time.Time     `json:"delete_time" gorm:"default:current_timestamp"`
+	DeletedTime      time.Time     `json:"delete_time"`
 }
 
 type Owner struct {
@@ -71,7 +71,7 @@ type Owner struct {
 	Type        string    `json:"type" gorm:"type:varchar(32)"`
 	SiteAdmin   bool      `json:"site_admin"`
 	UpdatedTime time.Time `json:"update_time" gorm:"default:current_timestamp"`
-	DeletedTime time.Time `json:"delete_time" gorm:"default:current_timestamp"`
+	DeletedTime time.Time `json:"delete_time"`
 }
 
 type Organization struct {
@@ -83,7 +83,7 @@ type Organization struct {
 	Type        string    `json:"type" gorm:"type:varchar(32)"`
 	SiteAdmin   bool      `json:"site_admin"`
 	UpdatedTime time.Time `json:"update_time" gorm:"default:current_timestamp"`
-	DeletedTime time.Time `json:"delete_time" gorm:"default:current_timestamp"`
+	DeletedTime time.Time `json:"delete_time"`
 }
 
 type License struct {
@@ -93,7 +93,7 @@ type License struct {
 	URL         string    `json:"url" gorm:"type:varchar(512)"`
 	NodeID      string    `json:"node_id" gorm:"type:varchar(64)"`
 	UpdatedTime time.Time `json:"update_time" gorm:"default:current_timestamp"`
-	DeletedTime time.Time `json:"delete_time" gorm:"default:current_timestamp"`
+	DeletedTime time.Time `json:"delete_time"`
 }
 
 var DB *gorm.DB

@@ -211,7 +211,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
 			trendingList = append(trendingList, Trending{
 				Date:     date,
-				FullName: repo[0],
+				Repostry: repo[0],
 				Stars:    star,
 				Since:    sinceType,
 				Language: language,
@@ -258,7 +258,7 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 }
 
 func main() {
-	taskName := flag.String("task", "trending", "run collect github trending repositry name task or save repository info task(trending/repo)")
+	taskName := flag.String("task", "trending", "run collect github trending repositry name task or save repository info task or init database(trending/repo/init_db)")
 	sinceTypeName := flag.String("since", "daily", "run collect github trending with since params, choice are daily, weekly, monthly")
 
 	flag.Parse()
@@ -292,6 +292,8 @@ func main() {
 	} else if task == "repo" {
 		log.WithFields(log.Fields{"sinceType": sinceType}).Info("will run saveRepositry2DB task .")
 		saveRepositry2DB(client, db, sinceType)
+	} else if task == "init_db" {
+		MigrateDB()
 	} else {
 		panic("wrong task type " + task + "!")
 	}
