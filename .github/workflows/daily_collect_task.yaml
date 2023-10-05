@@ -1,0 +1,34 @@
+name: daily_collect_task
+
+on:
+  schedule:
+    - cron: '0 0/1 * * *' # 每三个小时的整点
+
+
+jobs:
+  collect_to_cache:
+    name: collect github trending with interval three hours
+    runs-on: ubuntu-latest
+    env: # 设置环境变量
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_SSL_MODE: ${{ secrets.DB_SSL_MODE }}
+      DB_TZ: ${{ secrets.DB_TZ }}
+      API_URL: ${{ secrets.API_URL }}
+      API_AUTH_KEY: ${{ secrets.API_AUTH_KEY }}
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      REDIS_USER: ${{ secrets.REDIS_USER }}
+      REDIS_PASSWD: ${{ secrets.REDIS_PASSWD }}
+
+    steps:
+      - name: download github collect binary
+        run: wget https://github.com/zpzhue/github-trending-collect/releases/download/v0.1/github-trending-collect_0.1_linux_amd64.tar.gz -O github-trending-collect.tar.gz && ls -lh
+
+      - name: unpack tar package file
+        run: /usr/bin/tar xf github-trending-collect.tar.gz && ls -lh
+
+      - name: run collect script
+        run: ./github-trending-collect -task trending -since daily

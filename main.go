@@ -5,10 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
-	"github.com/antchfx/htmlquery"
-	"github.com/redis/go-redis/v9"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +13,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/antchfx/htmlquery"
+	"github.com/redis/go-redis/v9"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const TrendingUrl = "https://github.com/trending"
@@ -59,7 +60,10 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 
 	log.Debug("开始请求" + reqUrl)
 	request, err := http.NewRequest("GET", TrendingUrl, nil)
-	request.URL.Query().Add("sinceType", sinceType)
+	query := request.URL.Query()
+	query.Add("sinceType", sinceType)
+	request.URL.RawQuery = query.Encode()
+
 	if err != nil {
 		panic(err)
 	}
@@ -211,7 +215,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
 			trendingList = append(trendingList, Trending{
 				Date:     date,
-				FullName: repo[0],
+				Repostry: repo[0],
 				Stars:    star,
 				Since:    sinceType,
 				Language: language,
@@ -238,9 +242,8 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cahce error: ")
 		}
 
-		repositoryList := make([]Repostry, len(ret))
+		var repositoryList []Repostry
 		for key := range ret {
-			// println("key=" + key + ", " + "value=" + value)
 			r, err := getRepositryInfo(client, key)
 			if err != nil {
 				log.WithFields(log.Fields{"name": key, "error": err.Error()}).Error("获取repository详细信息失败")
@@ -252,13 +255,12 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 		log.WithFields(log.Fields{
 			"repositrySize": len(repositoryList),
 		}).Info("save repositry list to database successful")
-
 	}
 
 }
 
 func main() {
-	taskName := flag.String("task", "trending", "run collect github trending repositry name task or save repository info task(trending/repo)")
+	taskName := flag.String("task", "trending", "run collect github trending repositry name task or save repository info task or init database(trending/repo/init_db)")
 	sinceTypeName := flag.String("since", "daily", "run collect github trending with since params, choice are daily, weekly, monthly")
 
 	flag.Parse()
@@ -292,6 +294,8 @@ func main() {
 	} else if task == "repo" {
 		log.WithFields(log.Fields{"sinceType": sinceType}).Info("will run saveRepositry2DB task .")
 		saveRepositry2DB(client, db, sinceType)
+	} else if task == "init_db" {
+		MigrateDB()
 	} else {
 		panic("wrong task type " + task + "!")
 	}
