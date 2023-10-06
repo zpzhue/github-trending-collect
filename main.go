@@ -58,8 +58,8 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 		reqUrl = TrendingUrl + "/" + language
 	}
 
-	log.Debug("开始请求" + reqUrl)
-	request, err := http.NewRequest("GET", TrendingUrl, nil)
+	log.Info("开始请求" + reqUrl)
+	request, err := http.NewRequest("GET", reqUrl, nil)
 	query := request.URL.Query()
 	query.Add("sinceType", sinceType)
 	request.URL.RawQuery = query.Encode()
@@ -68,7 +68,7 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 		panic(err)
 	}
 	r, err := client.Do(request)
-	log.Debug("请求完成" + TrendingUrl)
+	log.Debug("请求完成" + reqUrl)
 
 	if err != nil {
 		panic(err)
@@ -76,7 +76,7 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 	bodyReader := r.Body
 
 	if r.StatusCode != 200 {
-		log.WithFields(log.Fields{"url": TrendingUrl}).Fatalf("请求GitHub treading列表状态码异常")
+		log.WithFields(log.Fields{"url": reqUrl}).Fatalf("请求GitHub treading列表状态码异常")
 	}
 	log.Info("请求Github成功")
 
