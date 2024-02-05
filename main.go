@@ -104,7 +104,7 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 	return repoList
 }
 
-func getRepositryInfo(client *http.Client, repo string) (repostry Repostry, err error) {
+func getRepositryInfo(client *http.Client, repo string) (repository Repository, err error) {
 	repoApi := "https://api.github.com/repos" + repo
 	log.WithFields(log.Fields{"url": repoApi}).Info("请求仓库")
 
@@ -123,19 +123,19 @@ func getRepositryInfo(client *http.Client, repo string) (repostry Repostry, err 
 	if err != nil {
 		log.WithFields(
 			log.Fields{
-				"repostry": repoApi,
-				"error":    err.Error(),
+				"repository": repoApi,
+				"error":      err.Error(),
 			}).Error("request github api get error")
-		return repostry, err
+		return repository, err
 	}
 
 	// 3. 处理结果
 	bodyByte, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.WithFields(
-			log.Fields{"repostry": repoApi, "error": err.Error()},
+			log.Fields{"repository": repoApi, "error": err.Error()},
 		).Error("read github api result bytes error")
-		return repostry, err
+		return repository, err
 	}
 	if response.StatusCode != 200 {
 		log.WithFields(log.Fields{"response_code": response.StatusCode})
@@ -144,19 +144,20 @@ func getRepositryInfo(client *http.Client, repo string) (repostry Repostry, err 
 	}
 
 	// 4. 序列化成结构体
-	err = json.Unmarshal(bodyByte, &repostry)
+	err = json.Unmarshal(bodyByte, &repository)
 	if err != nil {
 		log.WithFields(
 			log.Fields{
-				"repostry": repoApi,
-				"error":    err.Error(),
+				"repository": repoApi,
+				"error":      err.Error(),
 			},
 		).Error("Unmarshal body error")
-		return repostry, err
+		return repository, err
 	}
-	return repostry, nil
+	return repository, nil
 }
 
+// 保存到数据库
 func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 	ctx := context.Background()
 	rc := getRedisClient()
@@ -173,8 +174,21 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		log.WithFields(log.Fields{"repo_list_length": l})
 		syscall.Exit(1)
 	}
-	var trendingList []Trending
+	var (
+		trendingList   []Trending
+		trendRecords   []Trending
+		trendRecordMap map[string]Trending
+		created        int
+		update         int
+	)
 	date := getDate(sinceType)
+
+	db.Select("id", "repository", "language").
+		Where(&Trending{Date: date, Since: sinceType}).
+		Find(&trendRecords)
+	for _, r := range trendRecords {
+		trendRecordMap[r.Repository] = r
+	}
 
 	for language, repoList := range repoMaps {
 		// 获取key对应的所有map数据(即仓库和start信息)
@@ -213,20 +227,29 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			}
 			// 添加到redis缓存
 			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
-			trendingList = append(trendingList, Trending{
-				Date:     date,
-				Repostry: repo[0],
-				Stars:    star,
-				Since:    sinceType,
-				Language: language,
-			})
-			log.WithFields(log.Fields{"repositry": repo[0]}).Info("save repository to cache successful")
+			rc.Expire(ctx, redisCacheKey, time.Hour*24)
+			if trend, ok := trendRecordMap[repo[0]]; !ok {
+				trendingList = append(trendingList, Trending{
+					Date:       date,
+					Repository: repo[0],
+					Stars:      star,
+					Since:      sinceType,
+					Language:   language,
+				})
+				created = created + 1
+			} else {
+				trendingList = append(trendingList, Trending{
+					ID:    trend.ID,
+					Stars: star,
+				})
+				update = update + 1
+			}
 		}
 	}
 
 	// 添加到数据库
-	db.Save(&trendingList)
-	log.Info("save all trending repositry successful!")
+	//db.Save(&trendingList)
+	log.WithFields(log.Fields{"created": created, "update": update}).Info("save all trending repositry successful!")
 }
 
 func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
@@ -242,7 +265,7 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cahce error: ")
 		}
 
-		var repositoryList []Repostry
+		var repositoryList []Repository
 		for key := range ret {
 			r, err := getRepositryInfo(client, key)
 			if err != nil {
