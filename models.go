@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gorm.io/gorm/logger"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 type Trending struct {
 	ID          int32      `json:"id" gorm:"primaryKey;type:bigserial"`
 	Date        string     `json:"date" gorm:"type:date"`
-	Repostry    string     `json:"repostry" gorm:"type:varchar(256);foreignKey:full_name"`
+	Repository  string     `json:"repository" gorm:"type:varchar(256);foreignKey:full_name"`
 	Stars       int        `json:"stars" gorm:"type:integer"`
 	Since       string     `json:"since" gorm:"type:varchar(16)"`
 	Language    string     `json:"language" gorm:"type:varchar(32)"`
@@ -19,7 +20,7 @@ type Trending struct {
 	DeletedTime *time.Time `json:"delete_time" gorm:"default:null"`
 }
 
-type Repostry struct {
+type Repository struct {
 	ID               int           `json:"id" gorm:"primaryKey;type:bigint"`
 	NodeID           string        `json:"node_id" gorm:"type:varchar(64)"`
 	Name             string        `json:"name" gorm:"type:varchar(64)"`
@@ -101,12 +102,14 @@ var DB *gorm.DB
 
 func Init() *gorm.DB {
 	dns := Conf.GetDNS()
-	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}
 	DB = db
-	MigrateDB()
+	//MigrateDB()
 
 	return db
 }
@@ -123,7 +126,7 @@ func MigrateDB() {
 	organization := &Organization{}
 	license := &License{}
 	err := DB.AutoMigrate(
-		&Repostry{
+		&Repository{
 			Owner:        owner,
 			Organization: organization,
 			Topics:       &[]string{"python"},
