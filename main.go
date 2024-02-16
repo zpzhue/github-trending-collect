@@ -248,7 +248,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 	}
 
 	// 添加到数据库
-	//db.Save(&trendingList)
+	db.Save(&trendingList)
 	log.WithFields(log.Fields{"created": created, "update": update}).Info("save all trending repositry successful!")
 }
 
@@ -262,7 +262,7 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 
 		ret, err := rc.HGetAll(ctx, redisCacheKey).Result()
 		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cahce error: ")
+			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cache error: ")
 		}
 
 		var repositoryList []Repository
