@@ -177,7 +177,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 	var (
 		trendingList   []Trending
 		trendRecords   []Trending
-		trendRecordMap map[string]Trending
+		trendRecordMap = make(map[string]Trending)
 		created        int
 		update         int
 	)
