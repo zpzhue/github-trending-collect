@@ -180,8 +180,14 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		trendRecordMap = make(map[string]Trending)
 		created        int
 		update         int
+		date           time.Time
 	)
-	date := getDate(sinceType)
+	dateStr := getDate(sinceType)
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		log.WithFields(log.Fields{"date": dateStr}).Error("parse date error")
+		panic(err)
+	}
 
 	db.Select("id", "repository", "language").
 		Where(&Trending{Date: date, Since: sinceType}).
@@ -192,7 +198,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 
 	for language, repoList := range repoMaps {
 		// 获取key对应的所有map数据(即仓库和start信息)
-		redisCacheKey := RedisCachePrefix + "_" + sinceType + "_" + language + "_" + date
+		redisCacheKey := RedisCachePrefix + "_" + sinceType + "_" + language + "_" + dateStr
 		cacheRet, err := rc.HGetAll(ctx, redisCacheKey).Result()
 		if err == redis.Nil {
 			log.WithFields(log.Fields{"key": redisCacheKey}).Debug("the key not has value")

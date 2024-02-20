@@ -11,7 +11,7 @@ import (
 
 type Trending struct {
 	ID          int32      `json:"id" gorm:"primaryKey;type:bigserial"`
-	Date        string     `json:"date" gorm:"type:date"`
+	Date        time.Time  `json:"date" gorm:"type:date"`
 	Repository  string     `json:"repository" gorm:"type:varchar(256);foreignKey:full_name"`
 	Stars       int        `json:"stars" gorm:"type:integer"`
 	Since       string     `json:"since" gorm:"type:varchar(16)"`
