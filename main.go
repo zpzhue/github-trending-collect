@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -30,8 +31,11 @@ var languageList = []string{"all", "c", "c++", "go", "java", "jupyter-notebook",
 获取对应的日期
 */
 func getDate(since string) (date string) {
-	cstZone := time.FixedZone("GMT", 8*3600)
-	t := time.Now().In(cstZone)
+	//cstZone := time.FixedZone("GMT", 8*3600)
+	t := time.Now().In(time.UTC)
+	if t.Hour() <= 11 {
+		t = t.Add(-time.Hour * 24)
+	}
 
 	var duration time.Duration
 	switch since {
@@ -193,7 +197,8 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		Where(&Trending{Date: date, Since: sinceType}).
 		Find(&trendRecords)
 	for _, r := range trendRecords {
-		trendRecordMap[r.Repository] = r
+		key := fmt.Sprintf("%s:%s", r.Language, r.Repository)
+		trendRecordMap[key] = r
 	}
 
 	for language, repoList := range repoMaps {
@@ -234,7 +239,8 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			// 添加到redis缓存
 			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
 			rc.Expire(ctx, redisCacheKey, time.Hour*24)
-			if trend, ok := trendRecordMap[repo[0]]; !ok {
+			key := fmt.Sprintf("%s:%s", language, repo[0])
+			if trend, ok := trendRecordMap[key]; !ok {
 				trendingList = append(trendingList, Trending{
 					Date:       date,
 					Repository: repo[0],
