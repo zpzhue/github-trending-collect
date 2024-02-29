@@ -214,7 +214,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		} else if err != nil {
 			log.WithFields(log.Fields{"key": redisCacheKey, "error": err.Error()}).Fatal("get redis value error")
 		}
-		var cacheRepoMap map[string]int
+		var cacheRepoMap = make(map[string]int)
 
 		for _, repo := range repoList {
 			// 检查start是否为数字
