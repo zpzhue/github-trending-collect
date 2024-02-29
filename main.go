@@ -24,6 +24,10 @@ import (
 const TrendingUrl = "https://github.com/trending"
 const RedisCachePrefix = "trending"
 
+const Daily = "daily"
+const Weekly = "weekly"
+const Monthly = "monthly"
+
 var languageList = []string{"all", "c", "c++", "go", "java", "jupyter-notebook", "python", "javascript", "typescript", "rust", "vue"}
 
 /*
@@ -39,11 +43,11 @@ func getDate(since string) (date string) {
 
 	var duration time.Duration
 	switch since {
-	case "daily":
+	case Daily:
 		duration = 0
-	case "weekly":
+	case Weekly:
 		duration = time.Duration(t.Weekday() - 1)
-	case "monthly":
+	case Monthly:
 		duration = time.Duration(t.Day() - 1)
 	default:
 		panic("unknown since type: " + since)
@@ -210,6 +214,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		} else if err != nil {
 			log.WithFields(log.Fields{"key": redisCacheKey, "error": err.Error()}).Fatal("get redis value error")
 		}
+		var cacheRepoMap map[string]int
 
 		for _, repo := range repoList {
 			// 检查start是否为数字
@@ -236,9 +241,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 				).Info("the old value greater than new value, skip this repository")
 				continue
 			}
-			// 添加到redis缓存
-			rc.HSet(ctx, redisCacheKey, map[string]interface{}{repo[0]: star})
-			rc.Expire(ctx, redisCacheKey, time.Hour*24)
+			cacheRepoMap[repo[0]] = star
 			key := fmt.Sprintf("%s:%s", language, repo[0])
 			if trend, ok := trendRecordMap[key]; !ok {
 				trendingList = append(trendingList, Trending{
@@ -257,6 +260,18 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 				update = update + 1
 			}
 		}
+		// 添加到redis缓存
+		rc.HSet(ctx, redisCacheKey, cacheRepoMap)
+		var duration time.Duration
+		switch sinceType {
+		case Daily:
+			duration = time.Hour * 24 * 2
+		case Weekly:
+			duration = time.Hour * 24 * 8
+		case Monthly:
+			duration = time.Hour * 24 * 32
+		}
+		rc.Expire(ctx, redisCacheKey, duration)
 	}
 
 	// 添加到数据库
