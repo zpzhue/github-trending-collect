@@ -33,12 +33,22 @@ type RedisInfo struct {
 	RedisPassword string
 }
 
+type OpenObserve struct {
+	Protocol     string
+	Entrypoint   string
+	IndexName    string
+	Organization string
+	UserName     string
+	Token        string
+}
+
 type Config struct {
 	GithubInfo
 	DBInfo
 	RedisInfo
 	proxy    bool
 	proxyUrl string
+	OpenObserve
 }
 
 var Conf *Config
@@ -92,6 +102,14 @@ func initConfig(configPath string) error {
 					RedisHost:     redisHost,
 					RedisUser:     redisUser,
 					RedisPassword: redisPasswd,
+				},
+				OpenObserve: OpenObserve{
+					Protocol:     viper.GetString("PROTOCOL"),
+					Entrypoint:   viper.GetString("ENTRYPOINT"),
+					IndexName:    viper.GetString("INDEX_NAME"),
+					Organization: viper.GetString("ORGANIZATION"),
+					UserName:     viper.GetString("USERNAME"),
+					Token:        viper.GetString("TOKEN"),
 				},
 			}
 			return nil

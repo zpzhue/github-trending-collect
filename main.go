@@ -215,6 +215,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			log.WithFields(log.Fields{"key": redisCacheKey, "error": err.Error()}).Fatal("get redis value error")
 		}
 		var cacheRepoMap = make(map[string]int)
+		var obTrendingRecords []*TrendingRecord
 
 		for _, repo := range repoList {
 			// 检查start是否为数字
@@ -242,6 +243,13 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 				continue
 			}
 			cacheRepoMap[repo[0]] = star
+			obTr := &TrendingRecord{
+				Date:       dateStr,
+				Repository: repo[0],
+				Stars:      star,
+				Since:      sinceType,
+				Language:   language,
+			}
 			key := fmt.Sprintf("%s:%s", language, repo[0])
 			if trend, ok := trendRecordMap[key]; !ok {
 				trendingList = append(trendingList, Trending{
@@ -252,14 +260,22 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 					Language:   language,
 				})
 				created = created + 1
+				obTr.Action = "create"
 			} else {
 				trendingList = append(trendingList, Trending{
 					ID:    trend.ID,
 					Stars: star,
 				})
 				update = update + 1
+				obTr.Action = "update"
+				obTr.RepoId = trend.ID
 			}
+			obTrendingRecords = append(obTrendingRecords, obTr)
 		}
+
+		// 推送到OpenObserve
+		EmitMessage(obTrendingRecords)
+
 		// 添加到redis缓存
 		rc.HSet(ctx, redisCacheKey, cacheRepoMap)
 		var duration time.Duration
