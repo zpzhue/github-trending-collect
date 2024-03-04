@@ -22,6 +22,12 @@ jobs:
       REDIS_HOST: ${{ secrets.REDIS_HOST }}
       REDIS_USER: ${{ secrets.REDIS_USER }}
       REDIS_PASSWD: ${{ secrets.REDIS_PASSWD }}
+      PROTOCOL: ${{ secrets.PROTOCOL }}
+      ENTRYPOINT: ${{ secrets.ENTRYPOINT }}
+      INDEX_NAME: ${{ secrets.INDEX_NAME }}
+      ORGANIZATION: ${{ secrets.ORGANIZATION }}
+      USERNAME: ${{ secrets.USERNAME }}
+      TOKEN: ${{ secrets.TOKEN }}
 
     steps:
       - name: download github collect binary
