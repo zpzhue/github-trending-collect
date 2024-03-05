@@ -12,27 +12,27 @@ import (
 )
 
 type TrendingRecord struct {
-	Date       string     `json:"date"`
-	Repository string     `json:"repository"`
-	Stars      int        `json:"stars"`
-	Since      string     `json:"since"`
-	Language   string     `json:"language"`
-	Action     string     `json:"action"`
-	RepoId     int32      `json:"repoId"`
-	Time       *time.Time `json:"time"`
-	UtcTime    *time.Time `json:"utcTime"`
+	Date       string `json:"date"`
+	Repository string `json:"repository"`
+	Stars      int    `json:"stars"`
+	Since      string `json:"since"`
+	Language   string `json:"language"`
+	Action     string `json:"action"`
+	RepoId     int32  `json:"repoId"`
+	Time       string `json:"_time"`
+	TimeStamp  int64  `json:"_timestamp"`
 }
 
 func fixRecordTime(data []*TrendingRecord) {
 	now := time.Now()
 	for _, record := range data {
-		if record.Time == nil {
+		if record.Time == "" {
 			t := now.In(time.FixedZone("GMT", 8*3600))
-			record.Time = &t
+			record.Time = t.Format(time.RFC3339)
 		}
-		if record.UtcTime == nil {
+		if record.TimeStamp <= 0 {
 			t := now.In(time.UTC)
-			record.UtcTime = &t
+			record.TimeStamp = t.UnixMicro()
 		}
 	}
 }
