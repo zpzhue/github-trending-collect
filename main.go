@@ -102,6 +102,9 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 		repoEle := htmlquery.FindOne(article, "h2/a/@href")
 		startEle := htmlquery.FindOne(article, "div/span[last()]")
 		repoStr := htmlquery.SelectAttr(repoEle, "href")
+		if strings.HasPrefix(repoStr, "/") {
+			repoStr = strings.TrimPrefix(repoStr, "/")
+		}
 		startStr := htmlquery.InnerText(startEle)
 		startStr = strings.TrimSpace(startStr)
 		startStr = re.FindString(startStr)
@@ -113,7 +116,7 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 }
 
 func getRepositryInfo(client *http.Client, repo string) (repository Repository, err error) {
-	repoApi := "https://api.github.com/repos" + repo
+	repoApi := "https://api.github.com/repos/" + repo
 	log.WithFields(log.Fields{"url": repoApi}).Info("请求仓库")
 
 	// 1. 构建请求
