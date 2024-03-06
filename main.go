@@ -192,6 +192,11 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 	)
 	dateStr := getDate(sinceType)
 	date, err := time.Parse("2006-01-02", dateStr)
+	log.WithFields(log.Fields{
+		"dateStr": dateStr,
+		"date":    date,
+		"now":     time.Now().In(time.FixedZone("UTC", 8*60*60)),
+	}).Info("get date info")
 	if err != nil {
 		log.WithFields(log.Fields{"date": dateStr}).Error("parse date error")
 		panic(err)
@@ -225,6 +230,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			}
 			oldStrStar, state := cacheRet[repo[0]]
 			oldStar, _ := strconv.Atoi(oldStrStar)
+			log.WithFields(log.Fields{"oldStar": oldStar, "newStar": star}).Debug("parse start info to number")
 
 			// 比较大小是否存储
 			if !state {
@@ -243,6 +249,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 				continue
 			}
 			cacheRepoMap[repo[0]] = star
+			log.WithFields(log.Fields{"repoName": repo[0], "star": star}).Debug("add repo pair to cacheRepoMap")
 			obTr := &TrendingRecord{
 				Date:       dateStr,
 				Repository: repo[0],
@@ -251,25 +258,23 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 				Language:   language,
 			}
 			key := fmt.Sprintf("%s:%s", language, repo[0])
+			tempTrending := Trending{
+				Date:       date,
+				Repository: repo[0],
+				Stars:      star,
+				Since:      sinceType,
+				Language:   language,
+			}
 			if trend, ok := trendRecordMap[key]; !ok {
-				trendingList = append(trendingList, Trending{
-					Date:       date,
-					Repository: repo[0],
-					Stars:      star,
-					Since:      sinceType,
-					Language:   language,
-				})
 				created = created + 1
 				obTr.Action = "create"
 			} else {
-				trendingList = append(trendingList, Trending{
-					ID:    trend.ID,
-					Stars: star,
-				})
+				tempTrending.ID = trend.ID
 				update = update + 1
 				obTr.Action = "update"
 				obTr.RepoId = trend.ID
 			}
+			trendingList = append(trendingList, tempTrending)
 			obTrendingRecords = append(obTrendingRecords, obTr)
 		}
 
@@ -278,6 +283,12 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 
 		// 添加到redis缓存
 		rc.HSet(ctx, redisCacheKey, cacheRepoMap)
+		log.WithFields(log.Fields{
+			"size":    len(cacheRepoMap),
+			"key":     redisCacheKey,
+			"created": created,
+			"update":  update},
+		).Info("add repo pairs to redis cache")
 		var duration time.Duration
 		switch sinceType {
 		case Daily:
@@ -288,6 +299,10 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 			duration = time.Hour * 24 * 32
 		}
 		rc.Expire(ctx, redisCacheKey, duration)
+		log.WithFields(log.Fields{
+			"size":   len(cacheRepoMap),
+			"expire": duration,
+		}).Info("save repository to redis.")
 	}
 
 	// 添加到数据库
@@ -306,6 +321,11 @@ func saveRepositry2DB(client *http.Client, db *gorm.DB, sinceType string) {
 		ret, err := rc.HGetAll(ctx, redisCacheKey).Result()
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Fatal("get redis cache error: ")
+		}
+
+		if ret == nil || len(ret) == 0 {
+			log.WithFields(log.Fields{"key": redisCacheKey}).Error("get empty repo pair form redis")
+			continue
 		}
 
 		var repositoryList []Repository
