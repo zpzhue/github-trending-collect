@@ -3,7 +3,7 @@ name: daily_save_task
 on:
   schedule:
     - cron: '30 9 * * *' # 每天下午5点半
-
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   save_to_db:
