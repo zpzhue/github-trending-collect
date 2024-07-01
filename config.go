@@ -3,133 +3,60 @@ package main
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
+	"time"
 )
 
 type DBInfo struct {
-	DBHost     string
-	DBPort     int
-	DBUser     string
-	DBPassword string
-	DBDBName   string
-	DBSslMode  string
-	DBTimezone string
+	DBHost     string `mapstructure:"host" yaml:"host"`
+	DBPort     int    `mapstructure:"port" yaml:"port"`
+	DBUser     string `mapstructure:"user" yaml:"user"`
+	DBPassword string `mapstructure:"password" yaml:"password"`
+	DBDBName   string `mapstructure:"name" yaml:"name"`
+	DBSslMode  string `mapstructure:"ssl-mode" yaml:"ssl-mode"`
+	DBTimezone string `mapstructure:"timezone" yaml:"timezone"`
 }
 
 type GithubInfo struct {
-	ApiUrl  string
-	Version string
-	AuthKey string
+	ApiUrl  string     `mapstructure:"url" yaml:"url"`
+	Version *time.Time `mapstructure:"version" yaml:"version"`
+	AuthKey string     `mapstructure:"auth-key" yaml:"auth-key"`
 }
 
 type RedisInfo struct {
-	RedisHost     string
-	RedisUser     string
-	RedisPassword string
+	RedisHost     string `mapstructure:"host" yaml:"host"`
+	RedisUser     string `mapstructure:"user" yaml:"user"`
+	RedisPassword string `mapstructure:"password" yaml:"password"`
 }
 
 type OpenObserve struct {
-	Protocol     string
-	Entrypoint   string
-	IndexName    string
-	Organization string
-	UserName     string
-	Token        string
+	Protocol     string `mapstructure:"protocol" yaml:"protocol"`
+	Entrypoint   string `mapstructure:"entrypoint" yaml:"entrypoint"`
+	IndexName    string `mapstructure:"index-name" yaml:"index-name"`
+	Organization string `mapstructure:"organization" yaml:"organization"`
+	UserName     string `mapstructure:"username" yaml:"username"`
+	Token        string `mapstructure:"token" yaml:"token"`
 }
 
 type Config struct {
-	GithubInfo
-	DBInfo
-	RedisInfo
-	proxy    bool
-	proxyUrl string
-	OpenObserve
+	GithubInfo  `mapstructure:"github" yaml:"github"`
+	DBInfo      `mapstructure:"db" yaml:"db"`
+	RedisInfo   `mapstructure:"redis" yaml:"redis"`
+	proxy       bool   `mapstructure:"proxy" yaml:"proxy"`
+	proxyUrl    string `mapstructure:"proxy-url" yaml:"proxy-url"`
+	OpenObserve `mapstructure:"open-observe" yaml:"open-observe"`
 }
 
 var Conf *Config
 
-func initConfig(configPath string) error {
-
-	if configPath != "" {
-		viper.SetConfigFile(configPath)
-		viper.SetConfigType("yaml")
-	} else {
-		_, e := os.Stat("./config.yml")
-		if os.IsExist(e) {
-			log.WithFields(log.Fields{
-				configPath: "./config.yml",
-			}).Info("load config from config file")
-			viper.AddConfigPath(".")
-			viper.SetConfigName("config.yml")
-			viper.SetConfigType("yaml")
-		} else {
-			log.Info("load config from environment settings")
-			viper.AutomaticEnv()
-			dbHost := viper.GetString("DB_HOST")
-			dbPort := viper.GetInt("DB_PORT")
-			dbUser := viper.GetString("DB_USER")
-			dbPassword := viper.GetString("DB_PASSWORD")
-			dbName := viper.GetString("DB_NAME")
-			dbSslMode := viper.GetString("DB_SSL_MODE")
-			dbTz := viper.GetString("DB_TZ")
-			apiUrl := viper.GetString("API_URL")
-			apiVersion := viper.GetString("API_VERSION")
-			apiAuthKey := viper.GetString("API_AUTH_KEY")
-			redisHost := viper.GetString("REDIS_HOST")
-			redisUser := viper.GetString("REDIS_USER")
-			redisPasswd := viper.GetString("REDIS_PASSWD")
-			Conf = &Config{
-				GithubInfo: GithubInfo{
-					ApiUrl:  apiUrl,
-					Version: apiVersion,
-					AuthKey: apiAuthKey,
-				},
-				DBInfo: DBInfo{
-					DBHost:     dbHost,
-					DBPort:     dbPort,
-					DBUser:     dbUser,
-					DBPassword: dbPassword,
-					DBDBName:   dbName,
-					DBSslMode:  dbSslMode,
-					DBTimezone: dbTz,
-				},
-				RedisInfo: RedisInfo{
-					RedisHost:     redisHost,
-					RedisUser:     redisUser,
-					RedisPassword: redisPasswd,
-				},
-				OpenObserve: OpenObserve{
-					Protocol:     viper.GetString("PROTOCOL"),
-					Entrypoint:   viper.GetString("ENTRYPOINT"),
-					IndexName:    viper.GetString("INDEX_NAME"),
-					Organization: viper.GetString("ORGANIZATION"),
-					UserName:     viper.GetString("USERNAME"),
-					Token:        viper.GetString("TOKEN"),
-				},
-			}
-			return nil
-		}
-	}
-	viper.AutomaticEnv()
-	replacer := strings.NewReplacer(".", "_")
-	viper.SetEnvKeyReplacer(replacer)
-	if err := viper.ReadInConfig(); err != nil {
-		return errors.WithStack(err)
-	}
-
-	err := viper.Unmarshal(&Conf)
+func initConfig() {
+	parse := InitConfigClient()
+	err := parse.Unmarshal(&Conf)
 	if err != nil {
-		return err
+		panic(err)
 	}
-
-	watchConfig()
-	log.Info("init config finished. ")
-	return nil
 }
 
 func watchConfig() {
@@ -150,7 +77,7 @@ func (c *Config) GetDNS() (dns string) {
 func (c *Config) GetGithubAuthHeader() map[string]string {
 	return map[string]string{
 		"Accept":               "application/vnd.github+json",
-		"X-GitHub-Api-Version": c.Version,
+		"X-GitHub-Api-Version": c.Version.Format("2006-01-02"),
 		"Authorization":        "Bearer " + c.AuthKey,
 	}
 }

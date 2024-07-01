@@ -355,9 +355,7 @@ func main() {
 	flag.Parse()
 	task, sinceType := *taskName, *sinceTypeName
 	// 1. 初始化配置
-	if err := initConfig(""); err != nil {
-		log.Fatalf(err.Error())
-	}
+	initConfig()
 
 	// 2. 加载gorm DB
 	db := GetDB()
