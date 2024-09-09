@@ -18,7 +18,7 @@ cache
 # vendor/
 .env
 .idea
-
+config.yaml
 
 git config user.name=朱志鹏
 git config user.email=zpzhue@gmail.com

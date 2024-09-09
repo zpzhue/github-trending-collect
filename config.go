@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/fsnotify/fsnotify"
+	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"time"
 )
 
 type DBInfo struct {
@@ -20,9 +23,9 @@ type DBInfo struct {
 }
 
 type GithubInfo struct {
-	ApiUrl  string     `mapstructure:"url" yaml:"url"`
-	Version *time.Time `mapstructure:"version" yaml:"version"`
-	AuthKey string     `mapstructure:"auth-key" yaml:"auth-key"`
+	ApiUrl  string `mapstructure:"url" yaml:"url"`
+	Version string `mapstructure:"version" yaml:"version"`
+	AuthKey string `mapstructure:"auth-key" yaml:"auth-key"`
 }
 
 type RedisInfo struct {
@@ -51,11 +54,36 @@ type Config struct {
 
 var Conf *Config
 
-func initConfig() {
-	parse := InitConfigClient()
-	err := parse.Unmarshal(&Conf)
-	if err != nil {
-		panic(err)
+func initConfig() error {
+	_, e := os.Stat("./config.yaml")
+	if e == nil {
+		log.Info("found local config file ,loading config data ...")
+		viper.AddConfigPath(".")
+		viper.SetConfigName("config.yaml")
+		viper.SetConfigType("yaml")
+
+		viper.AutomaticEnv()
+		replacer := strings.NewReplacer(".", "_")
+		viper.SetEnvKeyReplacer(replacer)
+		if err := viper.ReadInConfig(); err != nil {
+			return errors.WithStack(err)
+		}
+
+		err := viper.Unmarshal(&Conf)
+		if err != nil {
+			return err
+		}
+
+		watchConfig()
+		log.Info("init config finished. ")
+		return nil
+	} else {
+		parse := InitConfigClient()
+		err := parse.Unmarshal(&Conf)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -77,7 +105,7 @@ func (c *Config) GetDNS() (dns string) {
 func (c *Config) GetGithubAuthHeader() map[string]string {
 	return map[string]string{
 		"Accept":               "application/vnd.github+json",
-		"X-GitHub-Api-Version": c.Version.Format("2006-01-02"),
+		"X-GitHub-Api-Version": c.GithubInfo.Version,
 		"Authorization":        "Bearer " + c.AuthKey,
 	}
 }

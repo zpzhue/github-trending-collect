@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -355,7 +356,11 @@ func main() {
 	flag.Parse()
 	task, sinceType := *taskName, *sinceTypeName
 	// 1. 初始化配置
-	initConfig()
+	err := initConfig()
+	if err != nil {
+		log.WithField("error", err).Error("load config error")
+		os.Exit(1)
+	}
 
 	// 2. 加载gorm DB
 	db := GetDB()
