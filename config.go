@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 	"strings"
@@ -116,6 +117,9 @@ func getRedisClient() *redis.Client {
 		Username:              Conf.RedisUser,
 		Password:              Conf.RedisPassword,
 		ContextTimeoutEnabled: false,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	})
 
 	return client
