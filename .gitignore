@@ -18,6 +18,7 @@ cache
 # vendor/
 .env
 .idea
+.vscode
 config.yaml
 
 git config user.name=朱志鹏

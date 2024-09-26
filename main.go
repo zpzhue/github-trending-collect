@@ -103,9 +103,7 @@ func getTrendingList(client *http.Client, sinceType, language string) (repoList 
 		repoEle := htmlquery.FindOne(article, "h2/a/@href")
 		startEle := htmlquery.FindOne(article, "div/span[last()]")
 		repoStr := htmlquery.SelectAttr(repoEle, "href")
-		if strings.HasPrefix(repoStr, "/") {
-			repoStr = strings.TrimPrefix(repoStr, "/")
-		}
+		repoStr = strings.TrimPrefix(repoStr, "/")
 		startStr := htmlquery.InnerText(startEle)
 		startStr = strings.TrimSpace(startStr)
 		startStr = re.FindString(startStr)
@@ -223,7 +221,7 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		} else if err != nil {
 			log.WithFields(log.Fields{"key": redisCacheKey, "error": err.Error()}).Fatal("get redis value error")
 		}
-		var cacheRepoMap = make(map[string]int)
+		var cacheRepoMap = make(map[string]interface{})
 		var obTrendingRecords []*TrendingRecord
 
 		for _, repo := range repoList {
@@ -286,7 +284,10 @@ func saveTrendingList(client *http.Client, db *gorm.DB, sinceType string) {
 		EmitMessage(obTrendingRecords)
 
 		// 添加到redis缓存
-		rc.HSet(ctx, redisCacheKey, cacheRepoMap)
+		err = rc.HSet(ctx, redisCacheKey, cacheRepoMap).Err()
+		if err != nil {
+			log.WithFields(log.Fields{"key": redisCacheKey, "error": err.Error()}).Fatal("set redis value error")
+		}
 		log.WithFields(log.Fields{
 			"size":    len(cacheRepoMap),
 			"key":     redisCacheKey,

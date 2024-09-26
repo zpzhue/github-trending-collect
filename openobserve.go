@@ -41,6 +41,10 @@ func fixRecordTime(data []*TrendingRecord) {
 func EmitMessage(data []*TrendingRecord) {
 	fixRecordTime(data)
 	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		log.WithFields(log.Fields{"message": "marshal data error when send data to openobserve"}).Error(err)
+		return
+	}
 
 	url := fmt.Sprintf(
 		"%s://%s/api/%s/%s/_json",
