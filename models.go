@@ -138,6 +138,6 @@ func MigrateDB() {
 		&Trending{},
 	)
 	if err != nil {
-		log.Fatal("AutoMigrate BD failue")
+		log.WithError(err).Fatal("AutoMigrate BD failue")
 	}
 }
